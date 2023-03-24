@@ -2,8 +2,6 @@
 
 #include <glm/glm.hpp>
 
-Uint32 ColorFloatToUint32(glm::vec3 color);
-
 class Ray
 {
 public:
@@ -28,12 +26,27 @@ private:
 	glm::vec3 m_Direction;
 };
 
+Uint32 ColorFloatToUint32(glm::vec3 color);
+glm::vec3 PerPixelColor(const Ray& ray);
+
 int main(int argc, char* argv[])
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-	int windowWidth = 256;
-	int windowHeight = 256;
+	// Window
+	float aspect = 16.0f / 9.0f;
+	int windowWidth = 400;
+	int windowHeight = (int)((float)windowWidth / aspect);
+
+	// Camera
+	float viewportHeight = 2.0f;
+	float viewportWidth = aspect * viewportHeight;
+	float focalLength = 1.0f;
+
+	glm::vec3 origin = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 horizontal = glm::vec3(viewportWidth, 0.0f, 0.0f);
+	glm::vec3 vertical = glm::vec3(0.0f, viewportHeight, 0.0f);
+	glm::vec3 lowerLeftCorner = origin - horizontal / 2.0f - vertical / 2.0f - glm::vec3(0.0f, 0.0f, focalLength);
 
 	SDL_Window* window = SDL_CreateWindow("Ray Tracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
@@ -59,10 +72,17 @@ int main(int argc, char* argv[])
 				for (int x = 0; x < windowWidth; x++)
 				{
 					// Defaults color value with just alpha and black
-					glm::vec3 pixelColor(float(x) / (windowWidth - 1), float(y) / (windowHeight - 1), .25f);
+					//glm::vec3 pixelColor(float(x) / (windowWidth - 1), float(y) / (windowHeight - 1), .25f);
 
-					// Filling row at a time from bottom to top
-					pixels[windowWidth * windowHeight - windowWidth + x - y * windowHeight] = ColorFloatToUint32(pixelColor);
+					float u = (float)x / (float)(windowWidth - 1);
+					float v = (float)y / (float)(windowHeight - 1);
+
+					Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
+
+					// Filling row at a time from top to bottom
+					//int index = x + y * windowWidth;
+					int index = (windowHeight - 1 - y) * windowWidth + x;
+					pixels[index] = ColorFloatToUint32(PerPixelColor(ray));
 				}
 			}
 		}
@@ -99,4 +119,11 @@ Uint32 ColorFloatToUint32(glm::vec3 color)
 	red = red << 16;
 	green = green << 8;
 	return colorValue | red | green | blue;
+}
+
+glm::vec3 PerPixelColor(const Ray& ray)
+{
+	glm::vec3 direction = glm::normalize(ray.Direction());
+	float t = 0.5f * (direction.y + 1.0f);
+	return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
 }
