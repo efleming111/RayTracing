@@ -27,7 +27,8 @@ private:
 };
 
 Uint32 ColorFloatToUint32(glm::vec3 color);
-glm::vec3 PerPixelColor(const Ray& ray);
+glm::vec3 PerPixelColor(Ray& ray);
+float HitSphere(const glm::vec3& center, float radius, const Ray& ray);
 
 int main(int argc, char* argv[])
 {
@@ -121,9 +122,23 @@ Uint32 ColorFloatToUint32(glm::vec3 color)
 	return colorValue | red | green | blue;
 }
 
-glm::vec3 PerPixelColor(const Ray& ray)
+glm::vec3 PerPixelColor(Ray& ray)
 {
+	if (HitSphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, ray))
+	{
+		return glm::vec3(1.0f, 0.0f, 0.0f);
+	}
 	glm::vec3 direction = glm::normalize(ray.Direction());
 	float t = 0.5f * (direction.y + 1.0f);
 	return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
+}
+
+float HitSphere(const glm::vec3& sphereCenter, float sphereRadius, const Ray& ray)
+{
+	glm::vec3 atSphereOrigin = ray.Origin() - sphereCenter;
+	float a = glm::dot(ray.Direction(), ray.Direction());
+	float b = 2.0f * dot(atSphereOrigin, ray.Direction());
+	float c = glm::dot(atSphereOrigin, atSphereOrigin) - sphereRadius * sphereRadius;
+	float discriminant = b * b - 4.0f * a * c;
+	return (discriminant > 0.0f);
 }
